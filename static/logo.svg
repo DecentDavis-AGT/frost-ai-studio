@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- Deep Dark Tech Canvas Background -->
+    <radialGradient id="deepFrostBg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="65%" stop-color="#080e18"/>
+      <stop offset="100%" stop-color="#03070d"/>
+    </radialGradient>
+
+    <!-- Subtle Icy Backlight Glow -->
+    <filter id="softIceGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- 3D Beveled Snowflake Arm (Single Branch) -->
+    <g id="crystalBranch">
+      <!-- Main Vertical Spire (Light / Left Side) -->
+      <polygon points="250,250 242,160 250,55 250,250" fill="#ffffff"/>
+      <!-- Main Vertical Spire (Shadow / Right Side) -->
+      <polygon points="250,250 258,160 250,55 250,250" fill="#cbd5e1"/>
+
+      <!-- Upper Outer V-Prongs (Light Left, Dark Right) -->
+      <!-- Left Upper Prong -->
+      <polygon points="246,125 210,95 214,90 248,118" fill="#ffffff"/>
+      <polygon points="248,118 214,90 220,93 250,123" fill="#cbd5e1"/>
+      
+      <!-- Right Upper Prong -->
+      <polygon points="252,118 286,90 290,95 254,125" fill="#f8fafc"/>
+      <polygon points="250,123 280,93 286,90 252,118" fill="#94a3b8"/>
+
+      <!-- Lower Inner V-Prongs -->
+      <!-- Left Lower Prong -->
+      <polygon points="246,170 220,146 224,142 248,164" fill="#ffffff"/>
+      <polygon points="248,164 224,142 228,145 250,168" fill="#cbd5e1"/>
+
+      <!-- Right Lower Prong -->
+      <polygon points="252,164 276,142 280,146 254,170" fill="#f8fafc"/>
+      <polygon points="250,168 272,145 276,142 252,164" fill="#94a3b8"/>
+
+      <!-- Outer Diamond Tip -->
+      <polygon points="250,42 243,55 250,68 257,55" fill="#ffffff"/>
+      <polygon points="250,42 250,68 257,55" fill="#cbd5e1"/>
+    </g>
+
+    <!-- Center Rotating Pinwheel Blade -->
+    <g id="centerFin">
+      <polygon points="250,250 250,225 264,233" fill="#ffffff"/>
+      <polygon points="250,250 264,233 260,248" fill="#94a3b8"/>
+    </g>
+  </defs>
+
+  <!-- Base Dark Shield Container -->
+  <rect x="20" y="20" width="460" height="460" rx="100" fill="url(#deepFrostBg)" stroke="#1e293b" stroke-width="3"/>
+
+  <!-- Geometric Tech Orbit Accents -->
+  <circle cx="250" cy="250" r="168" fill="none" stroke="#38bdf8" stroke-width="1.2" stroke-opacity="0.25" stroke-dasharray="8 6"/>
+  <circle cx="250" cy="250" r="105" fill="none" stroke="#ffffff" stroke-width="1" stroke-opacity="0.15"/>
+
+  <!-- Master 6-Pointed 3D Snow Crystal Cluster (0, 60, 120, 180, 240, 300 deg) -->
+  <g filter="url(#softIceGlow)">
+    <use href="#crystalBranch"/>
+    <use href="#crystalBranch" transform="rotate(60 250 250)"/>
+    <use href="#crystalBranch" transform="rotate(120 250 250)"/>
+    <use href="#crystalBranch" transform="rotate(180 250 250)"/>
+    <use href="#crystalBranch" transform="rotate(240 250 250)"/>
+    <use href="#crystalBranch" transform="rotate(300 250 250)"/>
+  </g>
+
+  <!-- Center Pinwheel Star (Inspired by bottom AI Overview logo) -->
+  <g filter="url(#softIceGlow)">
+    <use href="#centerFin"/>
+    <use href="#centerFin" transform="rotate(60 250 250)"/>
+    <use href="#centerFin" transform="rotate(120 250 250)"/>
+    <use href="#centerFin" transform="rotate(180 250 250)"/>
+    <use href="#centerFin" transform="rotate(240 250 250)"/>
+    <use href="#centerFin" transform="rotate(300 250 250)"/>
+  </g>
+
+  <!-- Central Diamond Core Gem -->
+  <polygon points="250,238 260,250 250,262 240,250" fill="#ffffff"/>
+  <circle cx="250" cy="250" r="3.5" fill="#080e18"/>
+</svg>
