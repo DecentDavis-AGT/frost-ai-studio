@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FROST AI Studio</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; }
+        html, body { height: 100%; width: 100%; background: #080d16; color: #f1f5f9; overflow: hidden; position: fixed; }
+
+        .ui-svg { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
+
+        /* AUTH MODAL */
+        #auth-modal {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at 50% 30%, rgba(88, 101, 242, 0.45) 0%, rgba(20, 26, 75, 0.85) 50%, rgba(8, 13, 22, 0.98) 100%);
+            backdrop-filter: blur(16px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 9999; padding: 16px;
+        }
+        .discord-auth-card {
+            background: linear-gradient(145deg, #182238, #111a2d);
+            border: 1px solid #5865f2;
+            width: 100%; max-width: 440px; border-radius: 18px; padding: 24px;
+            box-shadow: 0 16px 45px rgba(88, 101, 242, 0.35); position: relative;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(88, 101, 242, 0.3); padding-bottom: 8px; }
+        .modal-title { font-size: 18px; color: #ffffff; font-weight: 700; }
+        .close-btn { color: #94a3b8; font-size: 22px; cursor: pointer; }
+
+        .auth-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+        .auth-tab-btn {
+            flex: 1; padding: 9px; background: #0d1525; border: 1px solid #233352;
+            color: #94a3b8; border-radius: 9px; cursor: pointer; font-weight: 700; font-size: 13px;
+        }
+        .auth-tab-btn.active { background: #5865f2; color: #ffffff; border-color: #5865f2; }
+        .auth-group { margin-bottom: 12px; }
+        .auth-label { display: block; margin-bottom: 5px; font-size: 11px; color: #cbd5e1; font-weight: 600; text-transform: uppercase; }
+        .auth-input { width: 100%; padding: 10px 12px; background: #090e18; border: 1px solid #233352; border-radius: 9px; color: #fff; outline: none; font-size: 14px; }
+        .btn-discord-submit {
+            width: 100%; background: linear-gradient(135deg, #5865f2, #38bdf8);
+            border: none; padding: 11px; border-radius: 9px; font-weight: 700; cursor: pointer; color: #fff; font-size: 14px; margin-top: 6px;
+        }
+        .auth-status-msg { font-size: 12px; margin-top: 10px; text-align: center; }
+
+        /* APP LAYOUT */
+        #app-layout { display: flex; width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; position: relative; }
+
+        #sidebar {
+            width: 270px; min-width: 270px; background: #0b121e; border-right: 1px solid #16243a;
+            display: flex; flex-direction: column; justify-content: space-between; padding: 16px; z-index: 100;
+            transition: transform 0.3s ease;
+        }
+        .sidebar-actions { display: flex; gap: 8px; }
+        .btn-new-chat {
+            flex: 1; background: #131f33; color: #38bdf8; border: 1px solid #1e314f;
+            padding: 9px; border-radius: 9px; cursor: pointer; font-weight: 600;
+            display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px;
+        }
+        .btn-voice-toggle {
+            background: #131f33; color: #c084fc; border: 1px solid #3b1d5c;
+            padding: 9px 12px; border-radius: 9px; cursor: pointer; font-weight: 600;
+            display: flex; align-items: center; gap: 6px; font-size: 13px;
+        }
+        .btn-voice-toggle.active { background: #7e22ce; color: white; }
+
+        .sidebar-search-box {
+            margin-top: 12px; display: flex; align-items: center; background: #0f1828;
+            border: 1px solid #16243a; border-radius: 8px; padding: 7px 10px; gap: 8px;
+        }
+        .sidebar-search-box svg { width: 14px; height: 14px; fill: #64748b; }
+        .sidebar-search-box input { background: transparent; border: none; color: #fff; font-size: 13px; outline: none; width: 100%; }
+
+        .history-title { font-size: 11px; font-weight: 700; color: #475a77; text-transform: uppercase; margin: 16px 0 8px 4px; }
+        .history-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; margin-bottom: 12px; }
+        .history-item {
+            padding: 9px 12px; border-radius: 7px; font-size: 13px; color: #94a3b8; cursor: pointer;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .history-item:hover, .history-item.active { background: #131f33; color: #f8fafc; }
+        .history-item .chat-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+        .pin-svg { width: 14px; height: 14px; fill: #475a77; flex-shrink: 0; }
+
+        .user-profile-card {
+            background: #0f1828; border: 1px solid #16243a; padding: 10px 12px; border-radius: 9px;
+            display: flex; align-items: center; justify-content: space-between; cursor: pointer;
+        }
+        .user-left-box { display: flex; align-items: center; gap: 10px; }
+        .user-avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #38bdf8, #0284c7); display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .user-name { font-size: 13px; font-weight: 600; color: #f1f5f9; }
+        .user-role { font-size: 11px; color: #38bdf8; }
+        .logout-btn-mini { background: transparent; border: none; color: #ef4444; font-size: 11.5px; cursor: pointer; font-weight: bold; }
+
+        #mobile-backdrop {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.65); z-index: 90;
+        }
+
+        #main-view { flex: 1; display: flex; flex-direction: column; height: 100%; min-width: 0; background: #080d16; overflow: hidden; position: relative; }
+        header {
+            height: 56px; min-height: 56px; background: #0b121e; padding: 0 16px;
+            display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #16243a; gap: 10px;
+        }
+        .brand-area { display: flex; align-items: center; gap: 8px; }
+        .mobile-menu-btn {
+            display: none; background: transparent; border: none; color: #38bdf8;
+            padding: 6px; cursor: pointer; align-items: center; justify-content: center;
+        }
+        .mobile-menu-btn svg { width: 22px; height: 22px; fill: currentColor; }
+
+        .frost-snow-star {
+            width: 30px; height: 30px; filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.9));
+            transition: transform 0.4s ease; cursor: pointer; flex-shrink: 0;
+        }
+        .spinning { animation: frostSpin 1.6s infinite linear; }
+        @keyframes frostSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .logo-text { font-size: 18px; font-weight: 700; color: #fff; }
+        .logo-badge { font-size: 10px; font-weight: 600; background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 2px 6px; border-radius: 999px; }
+
+        .explore-bar {
+            flex: 1; max-width: 440px; background: #0f1828; border: 1px solid #16243a;
+            border-radius: 20px; padding: 4px 12px; display: flex; align-items: center; gap: 8px;
+        }
+        .explore-bar svg { width: 14px; height: 14px; fill: #38bdf8; flex-shrink: 0; }
+        .explore-bar input { background: transparent; border: none; color: #fff; font-size: 13px; outline: none; width: 100%; min-width: 50px; }
+        .explore-btn { background: #162035; border: none; color: #7dd3fc; padding: 4px 10px; border-radius: 12px; font-size: 11px; cursor: pointer; font-weight: 600; }
+
+        .top-tools { display: flex; align-items: center; gap: 6px; }
+        .tool-select {
+            background: #131f33; border: 1px solid #1e314f; color: #7dd3fc; padding: 5px 8px;
+            border-radius: 8px; font-size: 12px; font-weight: 600; outline: none; cursor: pointer;
+        }
+
+        /* --- BALANCED CENTER MAIN CONTAINER --- */
+        main { flex: 1; display: flex; flex-direction: column; width: 100%; min-height: 0; overflow: hidden; position: relative; }
+        #chat-container {
+            flex: 1; padding: 20px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 900px; margin: 0 auto;
+        }
+
+        .drag-overlay {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(8, 13, 22, 0.88); border: 2px dashed #38bdf8; z-index: 50;
+            align-items: center; justify-content: center; font-size: 16px; color: #38bdf8; font-weight: 600;
+        }
+        .drag-overlay.active { display: flex; }
+
+        #welcome-hero {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            margin: auto 0; text-align: center; gap: 14px; padding: 10px;
+        }
+        .hero-title {
+            font-size: clamp(22px, 4vw, 32px); font-weight: 700;
+            background: linear-gradient(135deg, #ffffff, #7dd3fc, #38bdf8);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .prompt-pills-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; justify-content: center; }
+        .prompt-pill {
+            background: #0f1828; border: 1px solid #16243a; color: #cbd5e1; padding: 7px 14px;
+            border-radius: 999px; font-size: 12.5px; cursor: pointer;
+        }
+        .prompt-pill:hover { border-color: #38bdf8; color: #fff; background: #16243d; }
+
+        .msg-block { display: flex; flex-direction: column; gap: 6px; max-width: 85%; width: fit-content; }
+        .msg-block.user-block { align-self: flex-end; align-items: flex-end; }
+        .msg-block.bot-block { align-self: flex-start; align-items: flex-start; }
+        .msg { padding: 12px 18px; border-radius: 14px; line-height: 1.55; font-size: 14px; word-break: break-word; }
+        .user-msg { background: #0284c7; color: #fff; border-bottom-right-radius: 3px; }
+        .bot-msg { background: #0f1828; border: 1px solid #16243a; color: #e2e8f0; border-bottom-left-radius: 3px; white-space: pre-wrap; width: 100%; }
+
+        /* YOUTUBE RICH ACTION CARD STYLING */
+        .yt-rich-card {
+            margin-top: 10px; background: #0b1322; border: 1px solid #233554; border-radius: 14px;
+            overflow: hidden; max-width: 520px; width: 100%; box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            transition: all 0.25s ease;
+        }
+        .yt-rich-card:hover { border-color: #38bdf8; }
+        
+        .yt-thumb-wrap { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; overflow: hidden; cursor: pointer; }
+        .yt-thumb-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .yt-play-badge {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(239, 68, 68, 0.92); color: #fff; width: 48px; height: 48px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.6); transition: transform 0.2s;
+        }
+        .yt-play-badge:hover { transform: translate(-50%, -50%) scale(1.1); }
+        .yt-info-box { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+        .yt-card-title { font-size: 14.5px; font-weight: 700; color: #f8fafc; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .yt-card-channel { font-size: 12.5px; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
+        
+        .yt-btn-row { display: flex; gap: 8px; margin-top: 4px; }
+        .btn-yt-action {
+            flex: 1; padding: 8px 10px; border-radius: 8px; font-size: 12px; font-weight: 700;
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; text-decoration: none; border: none; transition: 0.2s;
+        }
+        .btn-yt-play { background: #ef4444; color: #fff; }
+        .btn-yt-play:hover { background: #dc2626; }
+        .btn-yt-open { background: #16243d; color: #7dd3fc; border: 1px solid #233554; }
+        .btn-yt-open:hover { background: #1e3357; color: #fff; }
+        .btn-yt-comments { background: #121c2e; color: #38bdf8; border: 1px solid #1e3a5f; }
+        .btn-yt-comments:hover { background: #1a2942; }
+        .btn-yt-mini { background: #1a2333; color: #cbd5e1; border: 1px solid #28374d; }
+        .btn-yt-mini:hover { background: #223047; color: #38bdf8; }
+
+        /* FLOATING MINI-PLAYER (MINIMIZE TO CHAT) */
+        .yt-rich-card.minimized {
+            position: fixed; bottom: 85px; right: 25px; width: 320px; z-index: 1000;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.85); border: 1px solid #38bdf8;
+            animation: slideInMini 0.25s ease forwards;
+        }
+        @keyframes slideInMini {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* COMMENTS DRAWER INSIDE CARD */
+        .yt-comments-drawer {
+            display: none; padding: 12px 14px; background: #070c14; border-top: 1px solid #1c2b44;
+        }
+        .yt-comments-list {
+            max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin: 8px 0; font-size: 12px;
+        }
+        .yt-comment-item {
+            background: #0d1524; padding: 6px 10px; border-radius: 6px; border: 1px solid #16243a;
+        }
+        .yt-comment-input-row { display: flex; gap: 6px; margin-top: 8px; }
+        .yt-comment-input {
+            flex: 1; background: #0b121e; border: 1px solid #233554; color: #fff; font-size: 12px;
+            padding: 6px 10px; border-radius: 6px; outline: none;
+        }
+        .yt-comment-btn {
+            background: #38bdf8; border: none; color: #080d16; font-weight: 700; font-size: 11px;
+            padding: 0 12px; border-radius: 6px; cursor: pointer;
+        }
+
+        .thinking-card {
+            display: none; align-self: flex-start; background: #0d1624; border: 1px dashed #38bdf8;
+            border-radius: 12px; padding: 8px 16px; gap: 10px; align-items: center;
+        }
+        .thinking-card.active { display: flex; }
+
+        /* INPUT BAR */
+        #input-wrapper {
+            padding: 10px 24px 16px 24px; background: #080d16; border-top: 1px solid rgba(22, 36, 58, 0.4);
+            position: relative; width: 100%; max-width: 900px; margin: 0 auto;
+        }
+        #input-container {
+            background: #0b121e; padding: 6px 10px 6px 12px; display: flex; align-items: center;
+            gap: 8px; border: 1px solid #16243a; border-radius: 28px; width: 100%;
+        }
+        #input-container:focus-within { border-color: #38bdf8; }
+        
+        .icon-btn {
+            background: transparent; border: none; color: #94a3b8; width: 34px; height: 34px;
+            display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; flex-shrink: 0;
+        }
+        .icon-btn svg { width: 18px; height: 18px; fill: currentColor; }
+        #user-input { flex: 1; background: transparent; border: none; color: #fff; font-size: 14px; outline: none; min-width: 50px; }
+        #send-btn {
+            background: #38bdf8; border: none; width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+        }
+        #send-btn svg { width: 16px; height: 16px; fill: #080d16; }
+
+        #tools-popup-menu {
+            display: none; position: absolute; bottom: 68px; left: 24px;
+            background: #0c1422; border: 1px solid #1e314f; border-radius: 12px;
+            width: min(300px, 84vw); padding: 6px; z-index: 100; flex-direction: column; gap: 4px;
+        }
+        .popup-tool-item {
+            display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+            border-radius: 8px; color: #cbd5e1; font-size: 13px; cursor: pointer;
+        }
+        .popup-tool-item:hover { background: #16243d; color: #38bdf8; }
+        .popup-tool-item svg { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
+        .popup-divider { height: 1px; background: #1a2942; margin: 4px 0; }
+
+        #file-uploader { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- AUTH MODAL -->
+    <div id="auth-modal">
+        <div class="discord-auth-card">
+            <div class="modal-header">
+                <div class="modal-title">FROST Account Hub</div>
+                <span class="close-btn" onclick="closeAuthModal()">&times;</span>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab-btn active" id="tab-login-btn" onclick="switchAuthTab('login')">Sign In</button>
+                <button class="auth-tab-btn" id="tab-reg-btn" onclick="switchAuthTab('register')">Create Account</button>
+            </div>
+
+            <div id="login-section">
+                <div class="auth-group">
+                    <label class="auth-label">Username or Email</label>
+                    <input type="text" id="login-identifier" class="auth-input" placeholder="e.g. daniyal or daniyal@frost.ai">
+                </div>
+                <div class="auth-group">
+                    <label class="auth-label">Password</label>
+                    <input type="password" id="login-password" class="auth-input" placeholder="Enter password">
+                </div>
+                <button class="btn-discord-submit" onclick="submitLogin()">Log In to FROST</button>
+            </div>
+
+            <div id="register-section" style="display:none;">
+                <div class="auth-group">
+                    <label class="auth-label">Display Name</label>
+                    <input type="text" id="reg-name" class="auth-input" placeholder="e.g. Daniyal Mohsin">
+                </div>
+                <div class="auth-group">
+                    <label class="auth-label">Username (Unique)</label>
+                    <input type="text" id="reg-username" class="auth-input" placeholder="e.g. daniyal123">
+                </div>
+                <div class="auth-group">
+                    <label class="auth-label">Email</label>
+                    <input type="email" id="reg-email" class="auth-input" placeholder="e.g. user@frost.ai">
+                </div>
+                <div class="auth-group">
+                    <label class="auth-label">Password</label>
+                    <input type="password" id="reg-password" class="auth-input" placeholder="At least 4 characters">
+                </div>
+                <button class="btn-discord-submit" onclick="submitRegister()">Create Account</button>
+            </div>
+
+            <div class="auth-status-msg" id="auth-status-msg"></div>
+        </div>
+    </div>
+
+    <div id="mobile-backdrop" onclick="toggleMobileSidebar()"></div>
+
+    <div id="app-layout">
+        <aside id="sidebar">
+            <div style="display:flex; flex-direction:column; height:calc(100% - 65px);">
+                <div class="sidebar-actions">
+                    <button class="btn-new-chat" onclick="startNewChat()">
+                        <svg class="ui-svg" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        <span>New Chat</span>
+                    </button>
+                    <button class="btn-voice-toggle" id="voice-toggle-btn" onclick="toggleVoiceOutput()">
+                        <svg class="ui-svg" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                        <span id="voice-status-label">Voice ON</span>
+                    </button>
+                </div>
+
+                <div class="sidebar-search-box">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 14z"/></svg>
+                    <input type="text" id="chat-search" placeholder="Search chats..." oninput="filterChatHistory()">
+                </div>
+
+                <div class="history-title">Saved Chats</div>
+                <div class="history-list" id="history-list"></div>
+            </div>
+
+            <div class="user-profile-card">
+                <div class="user-left-box" onclick="openAuthModal()">
+                    <div class="user-avatar" id="avatar-letter">D</div>
+                    <div class="user-details">
+                        <div class="user-name" id="display-username">Daniyal</div>
+                        <div class="user-role">FROST Operator</div>
+                    </div>
+                </div>
+                <button class="logout-btn-mini" onclick="logoutUser()">Logout</button>
+            </div>
+        </aside>
+
+        <div id="main-view">
+            <header>
+                <div class="brand-area">
+                    <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" title="Open Sidebar">
+                        <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+                    </button>
+                    <svg id="header-logo" class="frost-snow-star" viewBox="0 0 100 100" onclick="startNewChat()">
+                        <defs>
+                            <linearGradient id="snowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#ffffff"/>
+                                <stop offset="45%" stop-color="#7dd3fc"/>
+                                <stop offset="85%" stop-color="#38bdf8"/>
+                                <stop offset="100%" stop-color="#0284c7"/>
+                            </linearGradient>
+                        </defs>
+                        <g stroke="url(#snowGrad)" stroke-width="3.2" stroke-linecap="round">
+                            <line x1="50" y1="6" x2="50" y2="94"/>
+                            <line x1="6" y1="50" x2="94" y2="50"/>
+                            <line x1="19" y1="19" x2="81" y2="81"/>
+                            <line x1="19" y1="81" x2="81" y2="19"/>
+                        </g>
+                        <polygon points="50,42 58,50 50,58 42,50" fill="#ffffff"/>
+                        <circle cx="50" cy="50" r="3" fill="#38bdf8"/>
+                    </svg>
+                    <div class="logo-text">FROST</div>
+                    <span class="logo-badge">v0.6</span>
+                </div>
+
+                <form class="explore-bar" onsubmit="triggerExplore(event)">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm2.18-12.82L7.5 10.5l3.32 6.68L17.5 13.5l-3.32-4.32zM12 13.25c-.69 0-1.25-.56-1.25-1.25s.56-1.25 1.25-1.25 1.25.56 1.25 1.25-.56 1.25-1.25 1.25z"/></svg>
+                    <input type="text" id="explore-input" placeholder="Google Search & Deep Research..." autocomplete="off">
+                    <button type="submit" class="explore-btn">Explore</button>
+                </form>
+
+                <div class="top-tools">
+                    <select id="model-select" class="tool-select">
+                        <option value="frost_ultra">FROST Ultra</option>
+                        <option value="gpt5_flash">GPT-5 Turbo</option>
+                        <option value="claude_sonnet">Claude 3.5</option>
+                        <option value="deepseek_r1">DeepSeek</option>
+                    </select>
+
+                    <select id="version-select" class="tool-select" onchange="switchPersonalityMode(this.value)">
+                        <option value="serious">Analytical</option>
+                        <option value="funny">Funny</option>
+                    </select>
+                </div>
+            </header>
+
+            <main id="drop-target">
+                <div id="drag-overlay" class="drag-overlay">Drop media or document here to analyze with FROST</div>
+
+                <div id="chat-container">
+                    <div id="welcome-hero">
+                        <h1 class="hero-title" id="dynamic-greeting">FROST Studio Live</h1>
+                        <p style="color:#94a3b8; font-size:13.5px;">Intelligent Agent • YouTube Rich Action Cards • Smart Actions</p>
+                        <div class="prompt-pills-row">
+                            <div class="prompt-pill" onclick="sendQuickPrompt('youtube pr dekhao junkeyy aur proboiz dark heroes new episode')">Junkeyy DarkHeroes Episode</div>
+                            <div class="prompt-pill" onclick="sendQuickPrompt('/image 16:9 Futuristic Cyberpunk PC setup with neon blue ice crystal glowing, 8k cinematic thumbnail')">16:9 Thumbnail</div>
+                            <div class="prompt-pill" onclick="sendQuickPrompt('give me HTML code for store')">HTML Store Code</div>
+                        </div>
+                    </div>
+
+                    <div id="thinking-indicator" class="thinking-card">
+                        <svg class="frost-snow-star spinning" viewBox="0 0 100 100" style="width:18px; height:18px;">
+                            <circle cx="50" cy="50" r="35" stroke="#38bdf8" stroke-width="6" fill="none" stroke-dasharray="40 20"/>
+                        </svg>
+                        <span id="thinking-status" style="font-size:12.5px; color:#7dd3fc;">Rendering response...</span>
+                    </div>
+                </div>
+
+                <div id="tools-popup-menu">
+                    <div class="popup-tool-item" onclick="triggerFileUpload()">
+                        <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                        <span>Upload Document / Code</span>
+                    </div>
+                    <div class="popup-tool-item" onclick="selectPlusAction('/video Cinematic drone view of ')">
+                        <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                        <span>Generate Video Motion</span>
+                    </div>
+                    <div class="popup-tool-item" onclick="selectPlusAction('/image 16:9 YouTube Thumbnail of ')">
+                        <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                        <span>Generate 16:9 Thumbnail</span>
+                    </div>
+                    <div class="popup-divider"></div>
+                    <div class="popup-tool-item" onclick="sendQuickPrompt('system ram status')">
+                        <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z M2 4v16h20V4H2zm4 4h4v8H6V8zm6 0h6v8h-6V8z"/></svg>
+                        <span>PC RAM Diagnostics</span>
+                    </div>
+                </div>
+
+                <input type="file" id="file-uploader" onchange="handleFileSelected(event)">
+
+                <div id="input-wrapper">
+                    <form id="input-container" onsubmit="sendMessage(event)">
+                        <button type="button" class="icon-btn" id="plus-tool-btn" onclick="toggleToolsMenu(event)" title="Tools">
+                            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        </button>
+
+                        <input type="text" id="user-input" placeholder="Message FROST, search YouTube video, /video, or code..." autocomplete="off">
+                        
+                        <button type="submit" id="send-btn">
+                            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                        </button>
+                    </form>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = 'session_' + Date.now();
+        let currentHistory = [];
+        let isVoiceEnabled = true;
+
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('mobile-backdrop');
+            sidebar.classList.toggle('open');
+            backdrop.classList.toggle('open');
+        }
+
+        // Inline video card player trigger
+        function playCardInline(btn, videoId) {
+            const card = btn.closest('.yt-rich-card');
+            const wrap = card.querySelector('.yt-thumb-wrap');
+            wrap.innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe>`;
+            btn.innerText = "Playing...";
+            btn.style.opacity = "0.7";
+            btn.disabled = true;
+        }
+
+        // Minimize / Expand Floating Mini-Player
+        function toggleMinimizeCard(btn) {
+            const card = btn.closest('.yt-rich-card');
+            card.classList.toggle('minimized');
+            if (card.classList.contains('minimized')) {
+                btn.innerText = "? Expand";
+                btn.style.color = "#38bdf8";
+            } else {
+                btn.innerText = "?? Minimize";
+                btn.style.color = "#cbd5e1";
+            }
+        }
+
+        // Comments Toggle Action
+        function toggleCardComments(btn, videoId) {
+            const card = btn.closest('.yt-rich-card');
+            const drawer = card.querySelector('.yt-comments-drawer');
+            if (drawer) {
+                drawer.style.display = (drawer.style.display === 'none' || !drawer.style.display) ? 'block' : 'none';
+            }
+        }
+
+        // Direct Comment Post Handler
+        function submitCardComment(btn, videoId) {
+            const card = btn.closest('.yt-rich-card');
+            const input = card.querySelector('.yt-comment-input');
+            const text = input ? input.value.trim() : "";
+            if (text) {
+                const list = card.querySelector('.yt-comments-list');
+                const newCmt = document.createElement('div');
+                newCmt.className = 'yt-comment-item';
+                newCmt.innerHTML = `<b style="color:#38bdf8;">@You (Daniyal):</b> ${text}`;
+                list.appendChild(newCmt);
+                input.value = "";
+            }
+            window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+        }
+
+        // Convert [YOUTUBE_CARD:{...}] into clean responsive HTML with Minimize + Comments
+        function renderCardHtml(jsonStr) {
+            try {
+                const yt = JSON.parse(jsonStr);
+                return `
+                <div class="yt-rich-card" data-video-id="${yt.videoId}">
+                    <div class="yt-thumb-wrap" onclick="playCardInline(this.parentElement.querySelector('.btn-yt-play'), '${yt.videoId}')">
+                        <img src="${yt.thumbnail}" alt="Thumbnail">
+                        <div class="yt-play-badge">
+                            <svg viewBox="0 0 24 24" style="width:22px; height:22px; fill:#fff;"><path d="M8 5v14l11-7z"/></svg>
+                        </div>
+                    </div>
+                    <div class="yt-info-box">
+                        <div class="yt-card-title">${yt.title}</div>
+                        <div class="yt-card-channel">
+                            <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:#ef4444;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+                            <span>${yt.channel}</span>
+                            <span style="color:#64748b; font-size:11px; margin-left:auto;">${yt.published || ''}</span>
+                        </div>
+                        <div class="yt-btn-row">
+                            <button class="btn-yt-action btn-yt-play" onclick="playCardInline(this, '${yt.videoId}')">
+                                <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:#fff;"><path d="M8 5v14l11-7z"/></svg>
+                                <span>Watch Inline</span>
+                            </button>
+                            <button class="btn-yt-action btn-yt-mini" onclick="toggleMinimizeCard(this)">
+                                ?? Minimize
+                            </button>
+                            <button class="btn-yt-action btn-yt-comments" onclick="toggleCardComments(this, '${yt.videoId}')">
+                                ?? Comments
+                            </button>
+                            <a href="${yt.url}" target="_blank" class="btn-yt-action btn-yt-open">
+                                <span>Open</span>
+                            </a>
+                        </div>
+                    </div>
+                    <!-- COMMENTS DRAWER -->
+                    <div class="yt-comments-drawer">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <span style="font-size:12px; font-weight:700; color:#38bdf8;">Community Comments</span>
+                            <span style="font-size:10.5px; color:#64748b;">Live Sync</span>
+                        </div>
+                        <div class="yt-comments-list">
+                            <div class="yt-comment-item"><b style="color:#38bdf8;">@FROST_Live:</b> Verified video card loaded. Press Space to pause/play, Double Space for 2x speed!</div>
+                        </div>
+                        <div class="yt-comment-input-row">
+                            <input type="text" class="yt-comment-input" placeholder="Write comment on this video...">
+                            <button class="yt-comment-btn" onclick="submitCardComment(this, '${yt.videoId}')">Post</button>
+                        </div>
+                    </div>
+                </div>`;
+            } catch (e) {
+                return `[YOUTUBE_CARD:${jsonStr}]`;
+            }
+        }
+
+        function parseCardsInText(text) {
+            if (!text) return "";
+            return text.replace(/\[YOUTUBE_CARD:(.*?)\]/g, function(match, p1) {
+                return renderCardHtml(p1);
+            });
+        }
+
+        // VOICE SYNTHESIS
+        function speakVoiceResponse(text) {
+            if (!isVoiceEnabled || !('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+
+            let clean = text.replace(/\[YOUTUBE_CARD:.*?\]/g, '').replace(/[*#_`]/g, '').trim();
+            if (clean.length > 300) clean = clean.substring(0, 300);
+
+            const utterance = new SpeechSynthesisUtterance(clean);
+            const voices = window.speechSynthesis.getVoices();
+            const naturalVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Online')));
+            if (naturalVoice) utterance.voice = naturalVoice;
+
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function toggleVoiceOutput() {
+            isVoiceEnabled = !isVoiceEnabled;
+            const btn = document.getElementById('voice-toggle-btn');
+            const lbl = document.getElementById('voice-status-label');
+            if (isVoiceEnabled) {
+                btn.classList.add('active');
+                lbl.innerText = 'Voice ON';
+            } else {
+                btn.classList.remove('active');
+                lbl.innerText = 'Voice OFF';
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            }
+        }
+
+        function toggleToolsMenu(e) {
+            e.stopPropagation();
+            const m = document.getElementById('tools-popup-menu');
+            m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+        }
+        document.addEventListener('click', () => {
+            const m = document.getElementById('tools-popup-menu');
+            if (m) m.style.display = 'none';
+        });
+
+        function triggerFileUpload() {
+            document.getElementById('file-uploader').click();
+            document.getElementById('tools-popup-menu').style.display = 'none';
+        }
+
+        function handleFileSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            processUploadedFile(file);
+        }
+
+        function processUploadedFile(file) {
+            const isMedia = file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/');
+            if (isMedia) {
+                const prompt = `Attached ${file.type.split('/')[0].toUpperCase()}: [${file.name}] (${(file.size/1024).toFixed(1)} KB) - Analyze details, visual aesthetics and give constructive creative feedback.`;
+                document.getElementById('user-input').value = prompt;
+                sendMessage(new Event('submit'));
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const formatted = `[FILE_ATTACHMENT: ${file.name}]\n` + text.substring(0, 3000);
+                document.getElementById('user-input').value = formatted;
+                sendMessage(new Event('submit'));
+            };
+            reader.readAsText(file);
+        }
+
+        window.addEventListener('paste', (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let index in items) {
+                const item = items[index];
+                if (item.kind === 'file') {
+                    const blob = item.getAsFile();
+                    processUploadedFile(blob);
+                }
+            }
+        });
+
+        const dropTarget = document.getElementById('drop-target');
+        const dragOverlay = document.getElementById('drag-overlay');
+        window.addEventListener('dragenter', (e) => { e.preventDefault(); dragOverlay.classList.add('active'); });
+        dragOverlay.addEventListener('dragover', (e) => { e.preventDefault(); });
+        dragOverlay.addEventListener('dragleave', (e) => { e.preventDefault(); dragOverlay.classList.remove('active'); });
+        dragOverlay.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dragOverlay.classList.remove('active');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                processUploadedFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        function selectPlusAction(prefix) {
+            const input = document.getElementById('user-input');
+            input.value = prefix;
+            input.focus();
+            document.getElementById('tools-popup-menu').style.display = 'none';
+        }
+
+        function setTimeGreeting() {
+            const hour = new Date().getHours();
+            const el = document.getElementById('dynamic-greeting');
+            const name = localStorage.getItem('frost_display_name') || 'Daniyal Mohsin';
+            if (!el) return;
+            if (hour >= 21 || hour < 5) el.innerText = `Good night, ${name} ?? What's on your mind?`;
+            else if (hour >= 5 && hour < 12) el.innerText = `Good morning, ${name} ?? Where should we start?`;
+            else if (hour >= 12 && hour < 17) el.innerText = `Good afternoon, ${name} ??? What's your agenda?`;
+            else el.innerText = `Good evening, ${name} ?? What should we explore?`;
+        }
+
+        function loadSavedSessions() {
+            const list = document.getElementById('history-list');
+            if (!list) return;
+            list.innerHTML = '';
+            let saved = {};
+            try {
+                const raw = localStorage.getItem('frost_chats');
+                if (raw) saved = JSON.parse(raw);
+            } catch (e) { saved = {}; }
+
+            if (Object.keys(saved).length === 0) {
+                list.innerHTML = `<div class="history-item active"><span class="chat-title">Current Session</span></div>`;
+                return;
+            }
+
+            for (let id in saved) {
+                const title = saved[id][0]?.msg || "Saved Chat";
+                const cleanTitle = title.replace(/^Explore:\s*/i, '').substring(0, 18) + '...';
+                const item = document.createElement('div');
+                item.className = 'history-item ' + (id === currentSessionId ? 'active' : '');
+                item.innerHTML = `
+                    <span class="chat-title">${cleanTitle}</span>
+                    <svg class="pin-svg" viewBox="0 0 24 24" onclick="togglePin(event, this)"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>
+                `;
+                item.onclick = (e) => {
+                    if (e.target.closest('.pin-svg')) return;
+                    restoreSession(id);
+                    if (window.innerWidth <= 768) toggleMobileSidebar();
+                };
+                list.appendChild(item);
+            }
+        }
+
+        function filterChatHistory() {
+            const q = document.getElementById('chat-search').value.toLowerCase().trim();
+            document.querySelectorAll('.history-item').forEach(it => {
+                const title = it.querySelector('.chat-title')?.innerText.toLowerCase() || '';
+                it.style.display = title.includes(q) ? 'flex' : 'none';
+            });
+        }
+
+        function togglePin(e, svgEl) {
+            e.stopPropagation();
+            const item = svgEl.closest('.history-item');
+            const list = document.getElementById('history-list');
+            list.prepend(item);
+            svgEl.style.fill = "#38bdf8";
+        }
+
+        function restoreSession(id) {
+            const raw = localStorage.getItem('frost_chats');
+            if (!raw) return;
+            const saved = JSON.parse(raw);
+            if (!saved[id]) return;
+
+            currentSessionId = id;
+            currentHistory = saved[id];
+            const chat = document.getElementById('chat-container');
+            const hero = document.getElementById('welcome-hero');
+            if (hero) hero.style.display = 'none';
+
+            chat.querySelectorAll('.msg-block').forEach(b => b.remove());
+            const indicator = document.getElementById('thinking-indicator');
+
+            currentHistory.forEach(item => {
+                const block = document.createElement('div');
+                block.className = `msg-block ${item.role}-block`;
+                const contentWithCards = parseCardsInText(item.msg);
+                block.innerHTML = `<div class="msg ${item.role}-msg">${contentWithCards}</div>`;
+                indicator.insertAdjacentElement('beforebegin', block);
+            });
+            chat.scrollTop = chat.scrollHeight;
+            loadSavedSessions();
+        }
+
+        function saveMessageToStorage(role, text) {
+            currentHistory.push({ role, msg: text });
+            let raw = localStorage.getItem('frost_chats');
+            let saved = raw ? JSON.parse(raw) : {};
+            saved[currentSessionId] = currentHistory;
+            localStorage.setItem('frost_chats', JSON.stringify(saved));
+            loadSavedSessions();
+        }
+
+        function startNewChat() {
+            currentSessionId = 'session_' + Date.now();
+            currentHistory = [];
+            document.querySelectorAll('.msg-block').forEach(b => b.remove());
+            const hero = document.getElementById('welcome-hero');
+            if (hero) hero.style.display = 'flex';
+            setTimeGreeting();
+            loadSavedSessions();
+            if (window.innerWidth <= 768) {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar.classList.contains('open')) toggleMobileSidebar();
+            }
+        }
+
+        function checkFirstScreenAuth() {
+            const loggedInUser = localStorage.getItem('frost_user_id');
+            const modal = document.getElementById('auth-modal');
+            if (!loggedInUser) modal.style.display = 'flex';
+            else modal.style.display = 'none';
+        }
+
+        function openAuthModal() {
+            document.getElementById('auth-modal').style.display = 'flex';
+            document.getElementById('auth-status-msg').innerText = '';
+        }
+        function closeAuthModal() {
+            document.getElementById('auth-modal').style.display = 'none';
+        }
+
+        function logoutUser() {
+            localStorage.removeItem('frost_user_id');
+            localStorage.removeItem('frost_username');
+            localStorage.removeItem('frost_display_name');
+            document.getElementById('display-username').innerText = 'Guest';
+            document.getElementById('avatar-letter').innerText = 'G';
+            openAuthModal();
+        }
+
+        function switchAuthTab(tab) {
+            if (tab === 'login') {
+                document.getElementById('tab-login-btn').classList.add('active');
+                document.getElementById('tab-reg-btn').classList.remove('active');
+                document.getElementById('login-section').style.display = 'block';
+                document.getElementById('register-section').style.display = 'none';
+            } else {
+                document.getElementById('tab-reg-btn').classList.add('active');
+                document.getElementById('tab-login-btn').classList.remove('active');
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('register-section').style.display = 'block';
+            }
+            document.getElementById('auth-status-msg').innerText = '';
+        }
+
+        async function submitLogin() {
+            const identifier = document.getElementById('login-identifier').value.trim();
+            const password = document.getElementById('login-password').value;
+            const status = document.getElementById('auth-status-msg');
+
+            if (!identifier || !password) {
+                status.style.color = '#f87171';
+                status.innerText = 'Please enter credentials.';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ identifier, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    saveUserSession(data.user);
+                    status.style.color = '#34d399';
+                    status.innerText = 'Login successful! Entering FROST...';
+                    setTimeout(() => closeAuthModal(), 600);
+                } else {
+                    status.style.color = '#f87171';
+                    status.innerText = data.error;
+                }
+            } catch (e) {
+                status.style.color = '#f87171';
+                status.innerText = 'Server connection error.';
+            }
+        }
+
+        async function submitRegister() {
+            const display_name = document.getElementById('reg-name').value.trim();
+            const username = document.getElementById('reg-username').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const status = document.getElementById('auth-status-msg');
+
+            if (!display_name || !username || !email || !password) {
+                status.style.color = '#f87171';
+                status.innerText = 'Please fill all fields.';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ display_name, username, email, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    saveUserSession(data.user);
+                    status.style.color = '#34d399';
+                    status.innerText = 'Account created! Entering FROST...';
+                    setTimeout(() => closeAuthModal(), 600);
+                } else {
+                    status.style.color = '#f87171';
+                    status.innerText = data.error;
+                }
+            } catch (e) {
+                status.style.color = '#f87171';
+                status.innerText = 'Server connection error.';
+            }
+        }
+
+        function saveUserSession(user) {
+            localStorage.setItem('frost_user_id', user.user_id || 'user_' + Date.now());
+            localStorage.setItem('frost_username', user.username);
+            localStorage.setItem('frost_display_name', user.display_name);
+            updateUserUI();
+        }
+
+        function updateUserUI() {
+            const name = localStorage.getItem('frost_display_name') || 'Daniyal Mohsin';
+            document.getElementById('display-username').innerText = name;
+            document.getElementById('avatar-letter').innerText = name.charAt(0).toUpperCase();
+            setTimeGreeting();
+        }
+
+        function switchPersonalityMode(modeVal) {
+            dispatchBackendQuery("mode " + modeVal, false);
+        }
+
+        function triggerExplore(e) {
+            e.preventDefault();
+            const q = document.getElementById('explore-input').value.trim();
+            if (!q) return;
+            document.getElementById('explore-input').value = '';
+            dispatchBackendQuery(q, true);
+        }
+
+        function sendQuickPrompt(t) {
+            document.getElementById('user-input').value = t;
+            sendMessage(new Event('submit'));
+        }
+
+        async function sendMessage(e) {
+            if (e) e.preventDefault();
+            const input = document.getElementById('user-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+            input.value = '';
+            dispatchBackendQuery(msg, false);
+        }
+
+        async function dispatchBackendQuery(msg, isExplore) {
+            const chat = document.getElementById('chat-container');
+            const hero = document.getElementById('welcome-hero');
+            if (hero) hero.style.display = 'none';
+
+            const thinkingCard = document.getElementById('thinking-indicator');
+            const thinkingText = document.getElementById('thinking-status');
+            const headerLogo = document.getElementById('header-logo');
+            const selectedModel = document.getElementById('model-select').value;
+
+            const label = isExplore ? `Explore: ${msg}` : msg;
+            const userBlock = `<div class="msg-block user-block"><div class="msg user-msg">${label}</div></div>`;
+            thinkingCard.insertAdjacentHTML('beforebegin', userBlock);
+            saveMessageToStorage('user', label);
+            chat.scrollTop = chat.scrollHeight;
+
+            headerLogo.classList.add('spinning');
+            thinkingCard.classList.add('active');
+            
+            const isVid = msg.toLowerCase().startsWith('/video') || msg.toLowerCase().startsWith('create video');
+            const isImg = msg.toLowerCase().startsWith('/image') || msg.toLowerCase().startsWith('create image');
+            
+            if (isVid) thinkingText.innerText = "Synthesizing FROST Video Canvas (60fps)...";
+            else if (isImg) thinkingText.innerText = "Rendering visual concept...";
+            else thinkingText.innerText = isExplore ? "Searching real-time Google network..." : "Analyzing with " + selectedModel.replace('_', ' ') + "...";
+
+            try {
+                const res = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg, is_explore: isExplore, model: selectedModel })
+                });
+                const data = await res.json();
+
+                thinkingCard.classList.remove('active');
+                headerLogo.classList.remove('spinning');
+
+                let formattedReply = parseCardsInText(data.reply);
+
+                const botBlock = `<div class="msg-block bot-block"><div class="msg bot-msg">${formattedReply}</div></div>`;
+                thinkingCard.insertAdjacentHTML('beforebegin', botBlock);
+                saveMessageToStorage('bot', data.reply);
+
+                if (data.reply) {
+                    speakVoiceResponse(data.reply);
+                }
+
+            } catch (err) {
+                thinkingCard.classList.remove('active');
+                headerLogo.classList.remove('spinning');
+                const errBlock = `<div class="msg-block bot-block"><div class="msg bot-msg">FROST: Error connecting to backend engine.</div></div>`;
+                thinkingCard.insertAdjacentHTML('beforebegin', errBlock);
+            }
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        // KEYBOARD SHORTCUTS: Space = Pause/Play, Double-Space = 2X Speed
+        let lastSpaceTime = 0;
+        window.addEventListener('keydown', function(e) {
+            const activeEl = document.activeElement;
+            if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+                return;
+            }
+
+            const activeIframe = document.querySelector('.yt-rich-card iframe');
+            if (!activeIframe) return;
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                const now = new Date().getTime();
+                const diff = now - lastSpaceTime;
+
+                if (diff < 320) {
+                    // Double space: 2X Speed
+                    activeIframe.contentWindow.postMessage(JSON.stringify({
+                        event: 'command',
+                        func: 'setPlaybackRate',
+                        args: [2]
+                    }), '*');
+                } else {
+                    // Single space: Pause/Play toggle
+                    activeIframe.contentWindow.postMessage(JSON.stringify({
+                        event: 'command',
+                        func: 'pauseVideo'
+                    }), '*');
+                }
+                lastSpaceTime = now;
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateUserUI();
+            loadSavedSessions();
+            checkFirstScreenAuth();
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+            }
+        });
+    </script>
+</body>
+</html>
